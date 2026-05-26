@@ -1,0 +1,95 @@
+{
+  "role_manipulation": {
+    "severity": "critical",
+    "patterns": [
+      "ignore (?:all )?(?:previous|prior|above) instructions",
+      "ignore (?:your|the) (?:instructions|rules|guidelines)",
+      "disregard (?:all )?(?:previous|prior|above)",
+      "forget (?:all )?(?:previous|prior|above|your|everything)",
+      "you are now (?:a |an )?(?!going|able|ready)",
+      "act as (?:if you were |though you are )?(?:a |an )?",
+      "pretend (?:to be|you are|that you)",
+      "roleplay as",
+      "from now on,? you (?:are|will|must|should)",
+      "new persona",
+      "switch (?:to|into) (?:a |an )?(?:new )?(?:mode|persona|character)",
+      "enter (?:a |an )?(?:new )?(?:mode|persona|character)"
+    ]
+  },
+  "delimiter_attacks": {
+    "severity": "high",
+    "patterns": [
+      "```system",
+      "```instructions",
+      "<\\|(?:im_start|im_end|system|assistant|user)\\|>",
+      "\\[SYSTEM\\]",
+      "\\[INST\\]",
+      "<<SYS>>",
+      "<</SYS>>",
+      "### (?:System|Instruction|Human|Assistant):",
+      "\\{\\{.*?\\}\\}",
+      "<%.*?%>"
+    ]
+  },
+  "jailbreak_signatures": {
+    "severity": "critical",
+    "patterns": [
+      "\\bDAN\\b",
+      "do anything now",
+      "jailbreak",
+      "\\bAIM\\b.*?machiavelli",
+      "developer mode",
+      "opposite mode",
+      "evil (?:mode|twin|version)",
+      "uncensored mode",
+      "no restrictions? mode",
+      "bypass (?:your |the )?(?:filters?|restrictions?|limitations?|rules?)",
+      "remove (?:your |the )?(?:filters?|restrictions?|limitations?)",
+      "disable (?:your |the )?(?:filters?|restrictions?|safety|guidelines)"
+    ]
+  },
+  "prompt_leaking": {
+    "severity": "high",
+    "patterns": [
+      "(?:repeat|show|display|print|output|reveal|tell me) (?:your |the )?(?:system )?(?:prompt|instructions|rules)",
+      "what (?:are|were) your (?:original )?instructions",
+      "what is your (?:system )?prompt",
+      "show (?:me )?(?:your |the )?(?:initial|original|system) (?:prompt|instructions|message)",
+      "(?:copy|paste|echo) (?:the |your )?(?:above|previous|system)",
+      "beginning of (?:the |this )?conversation"
+    ]
+  },
+  "encoding_evasion": {
+    "severity": "medium",
+    "patterns": [
+      "(?:base64|b64)[:,]?\\s*[A-Za-z0-9+/=]{20,}",
+      "\\\\u[0-9a-fA-F]{4}",
+      "&#x?[0-9a-fA-F]+;",
+      "%[0-9a-fA-F]{2}",
+      "\\b(?:eval|exec)\\s*\\(",
+      "(?:rot13|caesar|atbash)"
+    ]
+  },
+  "context_manipulation": {
+    "severity": "high",
+    "patterns": [
+      "end of (?:system )?(?:prompt|instructions|message)",
+      "ignore everything (?:before|after|above|below)",
+      "the (?:real|actual|true) (?:instructions|prompt|task)",
+      "(?:new|actual|real) conversation (?:starts|begins)",
+      "previous (?:context|conversation) (?:ends|is over)",
+      "--- ?(?:end|new|start) ?---"
+    ]
+  },
+  "authority_exploitation": {
+    "severity": "high",
+    "patterns": [
+      "(?:i am|this is) (?:your |the )?(?:creator|developer|admin|administrator|owner)",
+      "(?:admin|root|sudo|superuser) (?:mode|access|override)",
+      "maintenance mode",
+      "(?:debug|test|dev) mode",
+      "(?:special|elevated|root) (?:privileges|permissions|access)",
+      "override (?:code|key|password)"
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+export { runScan } from "./engine/attack-runner.js";
+export type { ScanOptions } from "./engine/attack-runner.js";
+export { parseMCPConfig, getDefaultConfigPaths } from "./scanner/mcp-parser.js";
+export { buildToolGraph, getHighRiskEdges, getExfiltrationPaths, getEscalationPaths } from "./scanner/tool-graph.js";
+export { mapPermissions } from "./scanner/permission-mapper.js";
+export type { PermissionProfile, PermissionRisk } from "./scanner/permission-mapper.js";
+export { judgeAttack } from "./engine/llm-judge.js";
+export { createSandbox } from "./engine/sandbox.js";
+export { generateJsonReport } from "./reporter/json-report.js";
+export { generateHtmlReport } from "./reporter/html-report.js";
+export { mapToOwasp } from "./reporter/owasp-mapper.js";

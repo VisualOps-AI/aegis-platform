@@ -1,0 +1,20 @@
+{
+  "name": "@aegis/phantom",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "node --test dist/**/*.test.js",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@aegis/shared": "*",
+    "@anthropic-ai/sdk": "^0.52.0",
+    "yaml": "^2.7.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.0"
+  }
+}

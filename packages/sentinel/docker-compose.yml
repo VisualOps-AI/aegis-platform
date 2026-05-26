@@ -1,0 +1,109 @@
+version: "3.8"
+
+services:
+  witness-governance:
+    build:
+      context: ./services/governance
+    container_name: witness-governance
+    ports:
+      - "9000:9000"
+    environment:
+      - ENVIRONMENT=production
+      - LOG_JSON=true
+      - DATABASE_URL=${DATABASE_URL}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  witness-brain:
+    build:
+      context: ./services/brain
+    container_name: witness-brain
+    ports:
+      - "5000:5000"
+    environment:
+      - INJECTION_THRESHOLD=0.5
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+  witness-sentinel:
+    build:
+      context: ./services/sentinel
+    container_name: witness-sentinel
+    ports:
+      - "8080:8080"
+    volumes:
+      - witness-data:/app/data
+    environment:
+      - ENVIRONMENT=production
+      - LOG_JSON=true
+      - WITNESS_GOVERNANCE_URL=http://witness-governance:9000
+      - WITNESS_GOVERNANCE_ENABLED=true
+      - WITNESS_REQUIRE_HTTPS=false
+      - LOG_FILE=/app/data/security_log.json
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - WITNESS_BRAIN_URL=http://witness-brain:5000
+      - ML_BRAIN_ENABLED=true
+      - ML_BRAIN_TIMEOUT=1.0
+    depends_on:
+      witness-governance:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+
+  witness-mcp-proxy:
+    build:
+      context: ./services/mcp-proxy
+    container_name: witness-mcp-proxy
+    ports:
+      - "3002:3002"
+    volumes:
+      - witness-data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  witness-gateway:
+    build:
+      context: ./services/gateway
+    container_name: witness-gateway
+    ports:
+      - "3001:3001"
+    environment:
+      - WITNESS_GOVERNANCE_URL=http://witness-governance:9000
+      - WITNESS_MCP_PROXY_URL=http://witness-mcp-proxy:3002
+      - WITNESS_API_KEY=${WITNESS_API_KEY}
+    depends_on:
+      witness-governance:
+        condition: service_healthy
+      witness-mcp-proxy:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  witness-data:
+    driver: local

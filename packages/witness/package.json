@@ -1,0 +1,29 @@
+{
+  "name": "witness-protocol",
+  "version": "0.1.0",
+  "description": "MCP-compatible proxy that intercepts agent tool calls with cryptographic receipts",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "witness": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "test": "node --test tests/**/*.test.ts --loader tsx"
+  },
+  "keywords": ["mcp", "agent", "proxy", "security", "receipts"],
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "@noble/ed25519": "^2.2.3",
+    "commander": "^13.1.0",
+    "yaml": "^2.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}

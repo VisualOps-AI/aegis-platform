@@ -1,0 +1,21 @@
+{
+  "name": "@aegis/cli",
+  "version": "1.0.0",
+  "private": true,
+  "bin": {
+    "aegis": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@aegis/phantom": "*",
+    "@aegis/shared": "*",
+    "commander": "^13.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.0"
+  }
+}

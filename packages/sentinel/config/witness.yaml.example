@@ -1,0 +1,57 @@
+witness_version: "0.1.0"
+policy_name: "strict"
+
+defaults:
+  decision: deny
+  sandbox: shadow_workspace
+
+agents:
+  - id: "*"
+    allowed_tools:
+      - filesystem.read
+      - filesystem.write
+      - terminal.exec
+      - http.request
+
+tools:
+  terminal.exec:
+    default: require_approval
+    rules:
+      - match: "^git (status|diff|log|add|commit|push)"
+        decision: allow_shadow
+      - match: "^npm (test|run build|install)$"
+        decision: allow_shadow
+      - match: "^python -m pytest"
+        decision: allow_shadow
+      - match: "rm -rf"
+        decision: deny
+        reason: "destructive_delete"
+      - match: "sudo"
+        decision: deny
+        reason: "privilege_escalation"
+
+  filesystem.write:
+    default: allow_shadow
+    allowed_paths:
+      - "./src/**"
+      - "./tests/**"
+      - "./package.json"
+      - "./README.md"
+    denied_paths:
+      - "**/.env*"
+      - "**/secrets/**"
+      - "**/*_rsa*"
+
+  http.request:
+    default: require_approval
+    allowed_domains:
+      - "api.github.com"
+      - "registry.npmjs.org"
+    redact_headers:
+      - "Authorization"
+      - "Cookie"
+      - "X-API-Key"
+
+risk_thresholds:
+  auto_approve_max: 0.3
+  require_approval_min: 0.7
