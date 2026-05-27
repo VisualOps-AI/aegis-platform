@@ -4,6 +4,8 @@ import { Command } from "commander";
 import { runScan } from "@aegis/phantom";
 import { generateJsonReport } from "@aegis/phantom";
 import { generateHtmlReport } from "@aegis/phantom";
+import { generateComplianceReport } from "@aegis/phantom";
+import type { ComplianceFramework } from "@aegis/phantom";
 import { writeFileSync, existsSync } from "node:fs";
 import type { AttackCategory } from "@aegis/shared";
 
@@ -22,7 +24,7 @@ program
   .argument("<config>", "Path to MCP config file (JSON)")
   .option(
     "-f, --format <format>",
-    "Output format: json, html, or both",
+    "Output format: json, html, compliance, or all",
     "both"
   )
   .option("-o, --output <path>", "Output directory for reports", ".")
@@ -59,16 +61,22 @@ program
 
       const outputDir = opts.output;
 
-      if (opts.format === "json" || opts.format === "both") {
+      if (opts.format === "json" || opts.format === "both" || opts.format === "all") {
         const jsonPath = `${outputDir}/aegis-report-${Date.now()}.json`;
         generateJsonReport(report, { outputPath: jsonPath });
         console.log(`  JSON report: ${jsonPath}`);
       }
 
-      if (opts.format === "html" || opts.format === "both") {
+      if (opts.format === "html" || opts.format === "both" || opts.format === "all") {
         const htmlPath = `${outputDir}/aegis-report-${Date.now()}.html`;
         generateHtmlReport(report, { outputPath: htmlPath });
         console.log(`  HTML report: ${htmlPath}`);
+      }
+
+      if (opts.format === "compliance" || opts.format === "all") {
+        const compliancePath = `${outputDir}/aegis-compliance-${Date.now()}.html`;
+        generateComplianceReport(report, { outputPath: compliancePath });
+        console.log(`  Compliance report: ${compliancePath}`);
       }
 
       console.log("");
@@ -131,6 +139,70 @@ program
         console.log(`      - [${risk.severity.toUpperCase()}] ${risk.type}: ${risk.description}`);
       }
       console.log("");
+    }
+  });
+
+program
+  .command("compliance")
+  .description("Generate compliance reports mapped to EU AI Act and NIST AI RMF")
+  .argument("<config>", "Path to MCP config file (JSON)")
+  .option(
+    "-r, --framework <framework>",
+    "Compliance framework: eu-ai-act, nist, or both",
+    "both"
+  )
+  .option("-o, --output <path>", "Output directory for reports", ".")
+  .option("--org <name>", "Organization name for report header", "")
+  .option("--system <name>", "System name for report header", "")
+  .option("-v, --verbose", "Verbose output", false)
+  .action(async (configPath: string, opts) => {
+    if (!existsSync(configPath)) {
+      console.error(`Error: Config file not found: ${configPath}`);
+      process.exit(1);
+    }
+
+    const frameworks: ComplianceFramework[] =
+      opts.framework === "both"
+        ? ["eu-ai-act", "nist"]
+        : [opts.framework as ComplianceFramework];
+
+    console.log("\n  AEGIS PHANTOM — Compliance Report Generator\n");
+    console.log(`  Target:     ${configPath}`);
+    console.log(`  Frameworks: ${frameworks.join(", ")}\n`);
+    console.log("  Scanning and assessing compliance...\n");
+
+    try {
+      const report = await runScan({
+        configPath,
+        verbose: opts.verbose,
+      });
+
+      printSummary(report);
+
+      const outputDir = opts.output;
+      const compliancePath = `${outputDir}/aegis-compliance-${Date.now()}.html`;
+
+      generateComplianceReport(report, {
+        outputPath: compliancePath,
+        frameworks,
+        organizationName: opts.org || undefined,
+        systemName: opts.system || undefined,
+      });
+
+      console.log(`  Compliance report: ${compliancePath}\n`);
+
+      const exitCode =
+        report.summary.bySeverity.critical > 0
+          ? 2
+          : report.summary.bySeverity.high > 0
+            ? 1
+            : 0;
+      process.exit(exitCode);
+    } catch (err) {
+      console.error(
+        `  Error: ${err instanceof Error ? err.message : String(err)}`
+      );
+      process.exit(1);
     }
   });
 

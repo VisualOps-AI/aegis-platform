@@ -8,4 +8,6 @@ export { judgeAttack } from "./engine/llm-judge.js";
 export { createSandbox } from "./engine/sandbox.js";
 export { generateJsonReport } from "./reporter/json-report.js";
 export { generateHtmlReport } from "./reporter/html-report.js";
+export { generateComplianceReport } from "./reporter/compliance-report.js";
+export type { ComplianceFramework, ComplianceReportOptions } from "./reporter/compliance-report.js";
 export { mapToOwasp } from "./reporter/owasp-mapper.js";
