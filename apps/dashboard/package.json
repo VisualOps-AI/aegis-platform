@@ -1,0 +1,28 @@
+{
+  "name": "@aegis/dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "next build",
+    "dev": "next dev --port 3100",
+    "clean": "rm -rf .next",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@aegis/phantom": "*",
+    "@aegis/shared": "*",
+    "next": "^15.3.3",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "recharts": "^2.15.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.8",
+    "@types/node": "^25.9.1",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.6",
+    "postcss": "^8.5.4",
+    "tailwindcss": "^4.1.8",
+    "typescript": "^5.8.0"
+  }
+}

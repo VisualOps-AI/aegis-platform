@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #0a0a0f;
+  --surface: #12121a;
+  --surface-hover: #1a1a28;
+  --surface-raised: #16161f;
+  --border: #1e1e2e;
+  --border-subtle: #161622;
+  --text: #e0e0e8;
+  --text-dim: #8888a0;
+  --text-muted: #555568;
+  --critical: #ff3355;
+  --critical-dim: rgba(255, 51, 85, 0.12);
+  --high: #ff6633;
+  --high-dim: rgba(255, 102, 51, 0.12);
+  --medium: #ffaa00;
+  --medium-dim: rgba(255, 170, 0, 0.10);
+  --low: #44aaff;
+  --low-dim: rgba(68, 170, 255, 0.10);
+  --info: #666680;
+  --info-dim: rgba(102, 102, 128, 0.10);
+  --pass: #00cc88;
+  --pass-dim: rgba(0, 204, 136, 0.12);
+  --warn: #ffaa00;
+  --warn-dim: rgba(255, 170, 0, 0.10);
+  --fail: #ff3355;
+  --fail-dim: rgba(255, 51, 85, 0.12);
+  --accent: #7c5cff;
+  --accent-dim: #5a3fd4;
+  --accent-glow: rgba(124, 92, 255, 0.15);
+  --radius: 6px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', 'Cascadia Code', monospace;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-dim);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+@keyframes scan-line {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+.animate-in {
+  animation: fadeIn 0.4s ease-out both;
+}
+
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
+.stagger-5 { animation-delay: 0.25s; }
+.stagger-6 { animation-delay: 0.3s; }
+.stagger-7 { animation-delay: 0.35s; }
+.stagger-8 { animation-delay: 0.4s; }

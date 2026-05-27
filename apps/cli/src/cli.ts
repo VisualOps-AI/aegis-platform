@@ -6,8 +6,10 @@ import { generateJsonReport } from "@aegis/phantom";
 import { generateHtmlReport } from "@aegis/phantom";
 import { generateComplianceReport } from "@aegis/phantom";
 import type { ComplianceFramework } from "@aegis/phantom";
-import { writeFileSync, existsSync } from "node:fs";
-import type { AttackCategory } from "@aegis/shared";
+import { writeFileSync, existsSync, mkdirSync } from "node:fs";
+import { join } from "node:path";
+import { homedir } from "node:os";
+import type { AttackCategory, ScanReport } from "@aegis/shared";
 
 const program = new Command();
 
@@ -34,6 +36,7 @@ program
     ""
   )
   .option("-v, --verbose", "Verbose output", false)
+  .option("-s, --save", "Save scan to ~/.aegis/scans/ for dashboard", false)
   .action(async (configPath: string, opts) => {
     if (!existsSync(configPath)) {
       console.error(`Error: Config file not found: ${configPath}`);
@@ -77,6 +80,10 @@ program
         const compliancePath = `${outputDir}/aegis-compliance-${Date.now()}.html`;
         generateComplianceReport(report, { outputPath: compliancePath });
         console.log(`  Compliance report: ${compliancePath}`);
+      }
+
+      if (opts.save) {
+        saveToDashboard(report);
       }
 
       console.log("");
@@ -205,6 +212,16 @@ program
       process.exit(1);
     }
   });
+
+function saveToDashboard(report: ScanReport): void {
+  const scanDir = join(homedir(), ".aegis", "scans");
+  if (!existsSync(scanDir)) {
+    mkdirSync(scanDir, { recursive: true });
+  }
+  const filePath = join(scanDir, `${report.id}.json`);
+  writeFileSync(filePath, JSON.stringify(report, null, 2), "utf-8");
+  console.log(`  Dashboard: ${filePath}`);
+}
 
 function printSummary(
   report: import("@aegis/shared").ScanReport
