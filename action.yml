@@ -1,0 +1,115 @@
+name: 'Aegis MCP Security Scan'
+description: 'Scan MCP configurations for AI agent security vulnerabilities. Detects auth boundary issues, tool chain attacks, indirect injection, multi-agent trust exploitation, supply chain risks, and context poisoning.'
+author: 'VisualOps-AI'
+
+branding:
+  icon: 'shield'
+  color: 'red'
+
+inputs:
+  config-path:
+    description: 'Path to MCP config file (JSON)'
+    required: true
+  modules:
+    description: 'Comma-separated attack modules to run (leave empty for all)'
+    required: false
+    default: ''
+  format:
+    description: 'Output format: json, html, or both'
+    required: false
+    default: 'json'
+  fail-on:
+    description: 'Minimum severity to fail: critical, high, medium, low'
+    required: false
+    default: 'high'
+
+outputs:
+  risk-score:
+    description: 'Overall risk score (0-10)'
+  total-findings:
+    description: 'Total number of findings'
+  critical-count:
+    description: 'Number of critical findings'
+  high-count:
+    description: 'Number of high findings'
+  report-path:
+    description: 'Path to the generated report'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+
+    - name: Install and Build
+      shell: bash
+      run: |
+        cd ${{ github.action_path }}
+        npm ci
+        npx turbo run build
+
+    - name: Run Scan
+      id: scan
+      shell: bash
+      run: |
+        MODULE_FLAG=""
+        if [ -n "${{ inputs.modules }}" ]; then
+          MODULE_FLAG="-m ${{ inputs.modules }}"
+        fi
+
+        REPORT_PATH="${{ runner.temp }}/aegis-report-$(date +%s)"
+
+        node ${{ github.action_path }}/apps/cli/dist/cli.js scan \
+          "${{ inputs.config-path }}" \
+          -f ${{ inputs.format }} \
+          -o "${{ runner.temp }}" \
+          $MODULE_FLAG 2>&1 | tee /tmp/aegis-output.txt || SCAN_EXIT=$?
+
+        SCAN_EXIT=${SCAN_EXIT:-0}
+
+        echo "report-path=${{ runner.temp }}" >> "$GITHUB_OUTPUT"
+
+        if [ -f "${{ runner.temp }}/aegis-report-"*.json ]; then
+          RISK=$(cat "${{ runner.temp }}"/aegis-report-*.json | node -e "
+            let d=''; process.stdin.on('data',c=>d+=c);
+            process.stdin.on('end',()=>{
+              const r=JSON.parse(d);
+              console.log(r.summary.riskScore.toFixed(1));
+            })
+          ")
+          TOTAL=$(cat "${{ runner.temp }}"/aegis-report-*.json | node -e "
+            let d=''; process.stdin.on('data',c=>d+=c);
+            process.stdin.on('end',()=>{
+              const r=JSON.parse(d);
+              console.log(r.summary.totalFindings);
+            })
+          ")
+          CRIT=$(cat "${{ runner.temp }}"/aegis-report-*.json | node -e "
+            let d=''; process.stdin.on('data',c=>d+=c);
+            process.stdin.on('end',()=>{
+              const r=JSON.parse(d);
+              console.log(r.summary.bySeverity.critical);
+            })
+          ")
+          HIGH=$(cat "${{ runner.temp }}"/aegis-report-*.json | node -e "
+            let d=''; process.stdin.on('data',c=>d+=c);
+            process.stdin.on('end',()=>{
+              const r=JSON.parse(d);
+              console.log(r.summary.bySeverity.high);
+            })
+          ")
+          echo "risk-score=$RISK" >> "$GITHUB_OUTPUT"
+          echo "total-findings=$TOTAL" >> "$GITHUB_OUTPUT"
+          echo "critical-count=$CRIT" >> "$GITHUB_OUTPUT"
+          echo "high-count=$HIGH" >> "$GITHUB_OUTPUT"
+        fi
+
+        FAIL_ON="${{ inputs.fail-on }}"
+        case $FAIL_ON in
+          critical) [ "$SCAN_EXIT" -ge 2 ] && exit 1 ;;
+          high)     [ "$SCAN_EXIT" -ge 1 ] && exit 1 ;;
+          medium)   [ "$SCAN_EXIT" -ge 1 ] && exit 1 ;;
+          low)      [ "$SCAN_EXIT" -ge 1 ] && exit 1 ;;
+        esac

@@ -28,7 +28,7 @@ program
   .option("-o, --output <path>", "Output directory for reports", ".")
   .option(
     "-m, --modules <modules>",
-    "Comma-separated attack modules to run (auth-boundary,tool-chain)",
+    "Comma-separated attack modules to run (auth-boundary,tool-chain,indirect-injection,multi-agent,supply-chain,context-poison)",
     ""
   )
   .option("-v, --verbose", "Verbose output", false)

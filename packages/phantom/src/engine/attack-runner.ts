@@ -13,6 +13,10 @@ import { buildToolGraph } from "../scanner/tool-graph.js";
 import { mapPermissions } from "../scanner/permission-mapper.js";
 import { runAuthBoundaryAttacks } from "../attacks/auth-boundary.js";
 import { runToolChainAttacks } from "../attacks/tool-chain.js";
+import { runIndirectInjectionAttacks } from "../attacks/indirect-injection.js";
+import { runMultiAgentAttacks } from "../attacks/multi-agent.js";
+import { runSupplyChainAttacks } from "../attacks/supply-chain.js";
+import { runContextPoisonAttacks } from "../attacks/context-poison.js";
 import { randomUUID } from "node:crypto";
 
 export interface ScanOptions {
@@ -38,6 +42,10 @@ export interface AttackContext {
 const ATTACK_MODULES: AttackModule[] = [
   { category: "auth-boundary", run: runAuthBoundaryAttacks },
   { category: "tool-chain", run: runToolChainAttacks },
+  { category: "indirect-injection", run: runIndirectInjectionAttacks },
+  { category: "multi-agent", run: runMultiAgentAttacks },
+  { category: "supply-chain", run: runSupplyChainAttacks },
+  { category: "context-poison", run: runContextPoisonAttacks },
 ];
 
 export async function runScan(options: ScanOptions): Promise<ScanReport> {

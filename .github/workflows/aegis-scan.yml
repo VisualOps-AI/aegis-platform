@@ -1,0 +1,143 @@
+name: Aegis MCP Security Scan
+
+on:
+  pull_request:
+    paths:
+      - '**/*.json'
+      - '**/claude_desktop_config.json'
+      - '**/mcp.json'
+      - '.mcp.json'
+  workflow_dispatch:
+    inputs:
+      config_path:
+        description: 'Path to MCP config file'
+        required: true
+        default: 'mcp-config.json'
+      modules:
+        description: 'Comma-separated modules (leave empty for all)'
+        required: false
+        default: ''
+      fail_on:
+        description: 'Fail threshold: critical, high, medium, low'
+        required: false
+        default: 'high'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  scan:
+    name: Aegis Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Aegis
+        run: |
+          npm install -g @aegis/cli || {
+            echo "Installing from source..."
+            cd ${{ github.workspace }}
+            if [ -f "package.json" ] && grep -q "turbo" package.json; then
+              npm ci
+              npx turbo run build
+            fi
+          }
+
+      - name: Find MCP configs
+        id: configs
+        run: |
+          CONFIG_PATH="${{ github.event.inputs.config_path || '' }}"
+          if [ -z "$CONFIG_PATH" ]; then
+            CONFIGS=$(find . -maxdepth 3 \( \
+              -name "claude_desktop_config.json" -o \
+              -name "mcp-config.json" -o \
+              -name ".mcp.json" -o \
+              -name "mcp.json" \
+            \) -not -path "*/node_modules/*" | head -5)
+            if [ -z "$CONFIGS" ]; then
+              echo "No MCP config files found"
+              echo "found=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "configs<<EOF" >> "$GITHUB_OUTPUT"
+            echo "$CONFIGS" >> "$GITHUB_OUTPUT"
+            echo "EOF" >> "$GITHUB_OUTPUT"
+          else
+            echo "configs=$CONFIG_PATH" >> "$GITHUB_OUTPUT"
+          fi
+          echo "found=true" >> "$GITHUB_OUTPUT"
+
+      - name: Run Aegis Scan
+        if: steps.configs.outputs.found == 'true'
+        id: scan
+        run: |
+          MODULES="${{ github.event.inputs.modules || '' }}"
+          FAIL_ON="${{ github.event.inputs.fail_on || 'high' }}"
+          EXIT_CODE=0
+          REPORT_BODY=""
+
+          while IFS= read -r config; do
+            [ -z "$config" ] && continue
+            echo "Scanning: $config"
+
+            MODULE_FLAG=""
+            if [ -n "$MODULES" ]; then
+              MODULE_FLAG="-m $MODULES"
+            fi
+
+            OUTPUT=$(node apps/cli/dist/cli.js scan "$config" -f json -o /tmp $MODULE_FLAG 2>&1) || SCAN_EXIT=$?
+            SCAN_EXIT=${SCAN_EXIT:-0}
+
+            REPORT_BODY="${REPORT_BODY}\n### Scan: \`${config}\`\n\`\`\`\n${OUTPUT}\n\`\`\`\n"
+
+            case $FAIL_ON in
+              critical) [ "$SCAN_EXIT" -ge 2 ] && EXIT_CODE=1 ;;
+              high)     [ "$SCAN_EXIT" -ge 1 ] && EXIT_CODE=1 ;;
+              medium)   [ "$SCAN_EXIT" -ge 1 ] && EXIT_CODE=1 ;;
+              *)        [ "$SCAN_EXIT" -ge 1 ] && EXIT_CODE=1 ;;
+            esac
+          done <<< "${{ steps.configs.outputs.configs }}"
+
+          echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "body<<EOF"
+            echo -e "$REPORT_BODY"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Post PR Comment
+        if: github.event_name == 'pull_request' && steps.configs.outputs.found == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = `## Aegis MCP Security Scan Results\n\n${{ steps.scan.outputs.body }}\n\n---\n*Scanned by [Aegis](https://github.com/VisualOps-AI/aegis-platform)*`;
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body
+            });
+
+      - name: Upload Reports
+        if: steps.configs.outputs.found == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: aegis-reports
+          path: /tmp/aegis-report-*
+          retention-days: 30
+
+      - name: Check Threshold
+        if: steps.configs.outputs.found == 'true'
+        run: |
+          if [ "${{ steps.scan.outputs.exit_code }}" = "1" ]; then
+            echo "::error::Aegis scan found findings above the '${{ github.event.inputs.fail_on || 'high' }}' threshold"
+            exit 1
+          fi
