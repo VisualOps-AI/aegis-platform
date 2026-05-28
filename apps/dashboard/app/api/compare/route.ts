@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { compareScanIds } from "@/lib/scan-store";
+import { requireAuth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export function GET(request: Request): NextResponse {
+  const auth = requireAuth(request, "readonly");
+  if (auth instanceof NextResponse) return auth;
+
   const { searchParams } = new URL(request.url);
   const a = searchParams.get("a");
   const b = searchParams.get("b");

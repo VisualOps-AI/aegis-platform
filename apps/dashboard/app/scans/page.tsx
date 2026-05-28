@@ -1,5 +1,6 @@
 import { listScans } from "@/lib/scan-store";
 import { ScanCard } from "@/components/scan-card";
+import { ScanTrigger } from "@/components/scan-trigger";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,7 @@ export default function ScansPage() {
             {scans.length} scan{scans.length !== 1 ? "s" : ""} recorded
           </div>
         </div>
+        <ScanTrigger />
       </div>
 
       {scans.length === 0 ? (

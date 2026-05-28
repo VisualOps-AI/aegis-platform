@@ -1,9 +1,11 @@
 {
-  "name": "witness-protocol",
-  "version": "0.1.0",
+  "name": "@aegis/witness",
+  "version": "1.0.0",
+  "private": true,
   "description": "MCP-compatible proxy that intercepts agent tool calls with cryptographic receipts",
   "type": "module",
-  "main": "dist/index.js",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "bin": {
     "witness": "dist/index.js"
   },
@@ -11,11 +13,11 @@
     "build": "tsc",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
-    "test": "node --test tests/**/*.test.ts --loader tsx"
+    "test": "node --test tests/**/*.test.ts --loader tsx",
+    "clean": "rm -rf dist"
   },
-  "keywords": ["mcp", "agent", "proxy", "security", "receipts"],
-  "license": "MIT",
   "dependencies": {
+    "@aegis/shared": "*",
     "@modelcontextprotocol/sdk": "^1.12.1",
     "@noble/ed25519": "^2.2.3",
     "commander": "^13.1.0",
@@ -24,6 +26,6 @@
   "devDependencies": {
     "@types/node": "^22.13.1",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.3"
+    "typescript": "^5.8.0"
   }
 }

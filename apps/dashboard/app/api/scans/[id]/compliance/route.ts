@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getScan } from "@/lib/scan-store";
+import { requireAuth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -22,9 +23,12 @@ interface ComplianceFramework {
 }
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
+  const auth = requireAuth(request, "readonly");
+  if (auth instanceof NextResponse) return auth;
+
   const { id } = await params;
   const scan = getScan(id);
   if (!scan) {

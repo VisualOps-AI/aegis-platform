@@ -1,20 +1,22 @@
 import { NextResponse } from "next/server";
-import { getScan } from "@/lib/scan-store";
 import { requireAuth } from "@/lib/auth";
+import { deleteKey } from "@/lib/key-store";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(
+export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
-  const auth = requireAuth(request, "readonly");
+  const auth = requireAuth(request, "admin");
   if (auth instanceof NextResponse) return auth;
 
   const { id } = await params;
-  const scan = getScan(id);
-  if (!scan) {
-    return NextResponse.json({ error: "Scan not found" }, { status: 404 });
+  const deleted = deleteKey(id);
+
+  if (!deleted) {
+    return NextResponse.json({ error: "Key not found" }, { status: 404 });
   }
-  return NextResponse.json(scan);
+
+  return NextResponse.json({ deleted: true });
 }

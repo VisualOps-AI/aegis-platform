@@ -5,6 +5,7 @@ import { SeverityChart } from "@/components/severity-chart";
 import { OwaspGrid } from "@/components/owasp-grid";
 import { ModuleSummary } from "@/components/module-summary";
 import { FindingsPreview } from "@/components/findings-preview";
+import { ScanTrigger } from "@/components/scan-trigger";
 
 export const dynamic = "force-dynamic";
 
@@ -45,17 +46,20 @@ export default function DashboardHome() {
             <span>{scan.duration}ms</span>
           </div>
         </div>
-        <a
-          href={`/scans/${scan.id}`}
-          className="text-[10px] uppercase tracking-wider no-underline px-3 py-1.5 transition-colors"
-          style={{
-            color: "var(--accent)",
-            border: "1px solid var(--accent-dim)",
-            borderRadius: "var(--radius)",
-          }}
-        >
-          View Full Report
-        </a>
+        <div className="flex items-center gap-2">
+          <ScanTrigger />
+          <a
+            href={`/scans/${scan.id}`}
+            className="text-[10px] uppercase tracking-wider no-underline px-3 py-1.5 transition-colors"
+            style={{
+              color: "var(--accent)",
+              border: "1px solid var(--accent-dim)",
+              borderRadius: "var(--radius)",
+            }}
+          >
+            View Full Report
+          </a>
+        </div>
       </div>
 
       {/* Top row: Risk gauge + metric cards */}
@@ -126,8 +130,17 @@ function EmptyState() {
       >
         Run your first security scan to populate the dashboard.
       </p>
+      <div className="mt-4">
+        <ScanTrigger />
+      </div>
+      <p
+        className="mt-3 text-[10px]"
+        style={{ color: "var(--text-dim)" }}
+      >
+        or via CLI:
+      </p>
       <code
-        className="mt-4 text-[11px] px-4 py-2"
+        className="mt-1 text-[11px] px-4 py-2"
         style={{
           color: "var(--accent)",
           background: "var(--surface)",
