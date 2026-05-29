@@ -143,6 +143,18 @@ node apps/cli/dist/cli.js scan path/to/mcp-config.json
   └─────────────────────────────────────┘
 ```
 
+### Demo: Scanning a Dangerous Config
+
+The repo ships a deliberately insecure example at [`examples/mcp-config.dangerous.json`](examples/mcp-config.dangerous.json) — shared credentials reused across servers, a filesystem server rooted at `/`, an unauthenticated shell-exec server, hardcoded production database credentials, and a read-to-network exfiltration path.
+
+```bash
+node apps/cli/dist/cli.js scan examples/mcp-config.dangerous.json
+```
+
+![Phantom scanning a dangerous MCP config](docs/assets/dangerous-config-scan.png)
+
+Phantom reports 61 findings (19 critical, 34 high, 8 medium) for a 7.5/10 risk score, exiting with code `2` because critical findings are present.
+
 ---
 
 ## Architecture
