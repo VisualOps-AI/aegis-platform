@@ -7,10 +7,21 @@ Aegis is an agentic security platform for MCP-powered AI agents, starting with P
 The platform is designed around a closed-loop security model:
 Attack → Detect → Sandbox → Audit → Improve
 
-Current working module: Phantom
+**Current working module — Phantom**
+
 - **Phantom** scans MCP configurations for dangerous permissions, weak auth boundaries, tool-chain attack paths, and agentic security misconfigurations.
 
-  In Progress : Sentinel and Witness
+> **What Works Today**
+>
+> - Phantom MCP configuration scanning
+> - CLI scan workflow
+> - MCP attack-surface mapping
+> - Risk scoring and severity output
+> - JSON/HTML report foundations
+> - Shared TypeScript types for findings and scan reports
+
+**In progress — Sentinel and Witness**
+
 - **Sentinel** monitors runtime behavior, detects policy violations, and can trigger emergency kill-switch workflows.
 - **Witness** proxies MCP tool calls through policy checks, shadow execution, diffing, timeline control, and audit trails.
 
