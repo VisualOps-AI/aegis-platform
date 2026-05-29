@@ -178,15 +178,15 @@ flowchart LR
 
 ## MVP Proof Assets
 
-Concrete evidence that the MVP works end to end: a live scan, a passing test suite, and the machine-readable report shape downstream systems consume.
+Concrete evidence the MVP works end to end: the Agent Policy Engine (the Aegis policy layer) making live allow/deny decisions, its test suite passing, and the machine-readable `ScanReport` shape Phantom produces for downstream automation.
 
-![CLI Scan Screenshot](docs/assets/cli-scan-screenshot.png)
+![Agent Policy Engine — CLI Decision](docs/assets/cli-scan-screenshot.png)
 
-*CLI scan running against an MCP config and printing the risk-score summary — proves the scanner ingests a real target and produces a scored, severity-bucketed result.*
+*The [Agent Policy Engine](https://github.com/VisualOps-AI/agent-policy-engine) evaluating an `rm -rf` tool call — matches `deny-destructive-commands` and returns `DENY` (critical). This is the policy decision step Witness enforces before a tool call reaches production.*
 
-![Test Output Screenshot](docs/assets/test-output-screenshot.png)
+![Agent Policy Engine — Test Output](docs/assets/test-output-screenshot.png)
 
-*Test suite passing — proves the attack modules, OWASP mapping, and report assembly are covered and green.*
+*Agent Policy Engine test suite passing — 7/7 across the allow / deny / sandbox / approval_required decision paths.*
 
 **Sample report:** [`examples/sample-scan-output.json`](examples/sample-scan-output.json)
 
