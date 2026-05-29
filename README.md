@@ -147,6 +147,53 @@ aegis-platform/
     └── cli/              # Unified CLI: aegis scan | surface
 ```
 
+### Policy Decision Flow
+
+How a proposed tool call moves through the policy engine and into the audit trail:
+
+```mermaid
+flowchart LR
+    A[AI Agent] --> B[Proposed Tool Call]
+    B --> C[Agent Policy Engine]
+
+    C --> D{Policy Decision}
+
+    D -->|allow| E[Execute Tool]
+    D -->|deny| F[Block Action]
+    D -->|sandbox| G[Shadow / Sandbox Execution]
+    D -->|approval_required| H[Human Approval Gate]
+
+    G --> I[Diff + Risk Review]
+    H --> I
+    I --> J[Approved Execution or Rejection]
+
+    E --> K[Audit Log]
+    F --> K
+    J --> K
+
+    K --> L[Evidence / Reports / Future Rules]
+```
+
+---
+
+## MVP Proof Assets
+
+Concrete evidence that the MVP works end to end: a live scan, a passing test suite, and the machine-readable report shape downstream systems consume.
+
+![CLI Scan Screenshot](docs/assets/cli-scan-screenshot.png)
+
+*CLI scan running against an MCP config and printing the risk-score summary — proves the scanner ingests a real target and produces a scored, severity-bucketed result.*
+
+![Test Output Screenshot](docs/assets/test-output-screenshot.png)
+
+*Test suite passing — proves the attack modules, OWASP mapping, and report assembly are covered and green.*
+
+**Sample report:** [`examples/sample-scan-output.json`](examples/sample-scan-output.json)
+
+This sample report demonstrates the machine-readable output shape produced by the Aegis scan workflow for automation, dashboards, CI checks, and downstream policy generation.
+
+It mirrors the `ScanReport` type in [`packages/shared/src/types/finding.ts`](packages/shared/src/types/finding.ts): a scan envelope (`id`, `timestamp`, `target`, `duration`), per-module `results`, and a `summary` rolled up by severity, attack category, and OWASP Agentic category with an overall `riskScore`. The findings cover dangerous filesystem access, shared credentials, shell execution risk, and a read-to-network data exfiltration chain, with `sandbox` and `approval_required` remediation guidance where appropriate.
+
 ---
 
 ## Core Modules

